@@ -1,0 +1,12 @@
+{
+  "name": "slm-chat-onnx-web",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Local SLM chat using ONNX Runtime Web (WASM/CPU)",
+  "scripts": {
+    "serve:coep": "npx http-server -p 5173 --cors -c-1 -H \"Cross-Origin-Opener-Policy: same-origin\" -H \"Cross-Origin-Embedder-Policy: require-corp\"",
+    "serve": "npx serve -l 5173",
+    "start": "npm run serve:coep",
+    "proxy": "node server.js"
+  }
+}

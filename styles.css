@@ -1,0 +1,186 @@
+/* styles.css - dedicated styles for SLM Chat */
+
+:root {
+  --bg: #0b0b0b;
+  --fg: #e6e6e6;
+  --muted: #9aa0a6;
+  --accent: #1a73e8;
+  --panel: #121212;
+  --border: #2a2a2a;
+  --success: #34a853;
+  --warning: #fbbc05;
+  --error: #ea4335;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.45;
+}
+
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+header h1 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+}
+
+header .sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+input[type="text"],
+input[type="number"],
+textarea {
+  width: 100%;
+  background: #0f0f0f;
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  outline: none;
+}
+
+input:focus,
+textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+}
+
+button {
+  background: var(--accent);
+  color: white;
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--border);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+#messages {
+  display: grid;
+  gap: 10px;
+  height: 50vh;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0e0e0e;
+  border: 1px solid var(--border);
+}
+
+.msg {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0f0f0f;
+  border: 1px solid #1e1e1e;
+}
+
+.msg .role {
+  font-weight: 700;
+  color: #8ab4f8;
+}
+
+.msg.assistant .role {
+  color: var(--success);
+}
+
+.msg pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95rem;
+}
+
+form#chat {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: end;
+}
+
+form#chat.busy textarea {
+  opacity: 0.8;
+}
+
+.footer {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Scrollbars */
+#messages::-webkit-scrollbar {
+  width: 10px;
+}
+#messages::-webkit-scrollbar-track {
+  background: #0b0b0b;
+}
+#messages::-webkit-scrollbar-thumb {
+  background: #2a2a2a;
+  border-radius: 8px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 520px) {
+  .app {
+    padding: 12px;
+  }
+  #messages {
+    height: 45vh;
+  }
+}

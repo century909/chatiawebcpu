@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SLM Chat - ONNX Runtime Web (WASM CPU)</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <!-- Import Map para resolver rutas absolutas "/npm/..." que retornan algunos bundles +esm de jsDelivr -->
+  <script type="importmap">
+  {
+    "imports": {
+      "/npm/": "https://cdn.jsdelivr.net/npm/"
+    }
+  }
+  </script>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+    /* Temporary minimal styles until styles.css is created */
+    :root { color-scheme: light dark; --bg:#0b0b0b; --fg:#e6e6e6; --muted:#9aa0a6; --accent:#1a73e8; --panel:#121212; --border:#2a2a2a;}
+    html, body { margin:0; padding:0; height:100%; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: var(--bg); color: var(--fg); }
+    .app { max-width: 960px; margin: 0 auto; padding: 16px; display: grid; gap: 12px; }
+    header h1 { font-size: 1.2rem; margin: 0 0 4px; }
+    header .sub { color: var(--muted); font-size: .9rem; }
+    .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .row { display:flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    label { font-size: .85rem; color: var(--muted); }
+    input[type="text"], input[type="number"] { background: #0f0f0f; color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; outline: none; }
+    button { background: var(--accent); color: white; border: 0; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+    button.secondary { background: transparent; color: var(--fg); border: 1px solid var(--border); }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+    #messages { display: grid; gap: 10px; height: 50vh; overflow: auto; padding: 8px; border-radius: 8px; background: #0e0e0e; border: 1px solid var(--border);}
+    .msg { display: grid; gap: 4px; }
+    .msg .role { font-weight: 600; color: #8ab4f8; }
+    .msg.assistant .role { color: #34a853; }
+    .msg pre { margin: 0; white-space: pre-wrap; word-wrap: break-word; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    form#chat { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+    form#chat textarea { min-height: 48px; max-height: 30vh; resize: vertical; background: #0f0f0f; color: var(--fg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    .footer { color: var(--muted); font-size: .85rem; }
+    .kv { display: flex; gap: 6px; align-items: center; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Local SLM Chat</h1>
+      <div class="sub">ONNX Runtime Web + WebAssembly (CPU). Todo corre en tu navegador.</div>
+    </header>
+
+    <section class="panel" id="model-panel">
+      <div class="row" style="gap:12px;">
+        <div class="kv" style="flex:1;">
+          <label for="model-id">Modelo</label>
+          <input id="model-id" type="text" style="flex:1;" value="Xenova/gpt2" placeholder="Repositorio del modelo (p.ej. Xenova/Qwen2.5-0.5B-Instruct)" />
+        </div>
+        <button id="btn-load">Cargar modelo</button>
+        <button id="btn-unload" class="secondary" disabled>Descargar</button>
+      </div>
+      <div class="row" style="margin-top:8px; gap:12px;">
+        <label class="kv">
+          <input id="use-base-url" type="checkbox" />
+          <span>Usar URL base personalizada</span>
+        </label>
+        <input id="base-url" type="text" placeholder="https://mi.servidor/modelos" style="flex:1; min-width:260px;" />
+        <label class="kv">
+          <input id="use-quantized" type="checkbox" checked />
+          <span>quantized (8-bit) si disponible</span>
+        </label>
+      </div>
+      <div class="row" style="margin-top:8px; gap:12px;">
+        <input id="dir-picker" type="file" webkitdirectory directory multiple style="display:none" />
+        <button id="btn-pick-dir" class="secondary" type="button" title="Experimental">Cargar desde carpeta (experimental)</button>
+        <span id="dir-count" class="sub"></span>
+      </div>
+      <div class="grid" style="margin-top:8px;">
+        <div class="kv">
+          <label for="max-new-tokens">max_new_tokens</label>
+          <input id="max-new-tokens" type="number" min="1" max="1024" value="64" />
+        </div>
+        <div class="kv">
+          <label for="temperature">temperature</label>
+          <input id="temperature" type="number" min="0" max="2" step="0.05" value="0.7" />
+        </div>
+        <div class="kv">
+          <label for="top-k">top_k</label>
+          <input id="top-k" type="number" min="0" max="200" value="50" />
+        </div>
+        <div class="kv">
+          <label for="top-p">top_p</label>
+          <input id="top-p" type="number" min="0" max="1" step="0.01" value="0.95" />
+        </div>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <span id="status" class="sub">Modelo no cargado.</span>
+      </div>
+    </section>
+
+    <section class="panel" id="chat-panel">
+      <div id="messages" aria-live="polite" aria-busy="false"></div>
+      <form id="chat">
+        <textarea id="prompt" placeholder="Escribe tu mensaje..."></textarea>
+        <div style="display:grid; gap:8px;">
+          <button id="btn-send" type="submit">Enviar</button>
+          <button id="btn-stop" type="button" class="secondary" disabled>Detener</button>
+        </div>
+      </form>
+    </section>
+  <!-- Pre-carga ESM de Transformers y lo expone globalmente para evitar fallos de import dinámico -->
+  <script type="module">
+    const candidates = [
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@3.3.1/+esm',
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@3.2.0/+esm',
+      'https://cdn.jsdelivr.net/npm/@xenova/transformers@latest/+esm'
+    ];
+    (async () => {
+      for (const url of candidates) {
+        try {
+          const T = await import(url);
+          window.__TRANSFORMERS__ = T;
+          console.log('Transformers pre-cargado desde', url);
+          break;
+        } catch (e) {
+          console.warn('Pre-carga fallida desde', url, e?.message || e);
+        }
+      }
+    })();
+  </script>
+
+    <section class="footer">
+      - Por defecto se usa el backend WASM (CPU). Si tu navegador soporta WebGPU, puedes habilitarlo luego.<br/>
+      - Cargar modelos grandes puede tardar y consumir RAM. Comienza con modelos pequeños (p.ej. gpt2).
+    </section>
+  </div>
+
+  <!-- App logic -->
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
