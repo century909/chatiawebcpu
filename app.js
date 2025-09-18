@@ -32,8 +32,8 @@ async function loadTransformers() {
   const proxyBase = 'http://localhost:5174/proxy';
 
   // Si ya fue pre-cargado por index.html, úsalo y retorna.
-  if (globalThis.__TRANSFORMERS__) {
-    const mod = globalThis.__TRANSFORMERS__;
+  if (window.__TRANSFORMERS__) {
+    const mod = window.__TRANSFORMERS__;
     pipeline = mod.pipeline || mod.default?.pipeline;
     env = mod.env || mod.default?.env;
     if (pipeline && env) {
@@ -259,7 +259,7 @@ function setUIForGeneration(active) {
   isGenerating = active;
   els.form.classList.toggle('busy', active);
   els.btnSend.disabled = active || !generator;
-  els.btnStop.disabled = active;
+  els.btnStop.disabled = !active;
   els.prompt.disabled = active || !generator;
 }
 
@@ -440,7 +440,7 @@ async function loadModel() {
   } catch (err) {
     console.error(err);
     let msg = (err?.message || String(err));
-    if (/Unexpected token <|Unexpected token <|text\/html|HTML/i.test(msg)) {
+    if (/Unexpected token <|text\/html|HTML/i.test(msg)) {
       msg = 'El servidor devolvió HTML en lugar de JSON/ONNX. Revisa "Usar URL base personalizada" y que tu host exponga rutas tipo /{repo}/resolve/main/*.';
     }
     alert('Error cargando el modelo: ' + msg);
